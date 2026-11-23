@@ -30,12 +30,11 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.opmodes;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
-import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -43,81 +42,23 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 
-import java.util.Arrays;
 import java.util.List;
 
-import org.firstinspires.ftc.teamcode.PathingTest;
+import org.firstinspires.ftc.teamcode.AutoPathingTest;
+import org.firstinspires.ftc.teamcode.TeleopPathingTest;
+import org.firstinspires.ftc.teamcode.tests.LimelightUtil;
 
 @Config
 @TeleOp(name = "Sensor: Limelight3A", group = "Sensor")
 public class main extends LinearOpMode {
 
-    // Localization
-    private Limelight3A limelight;
-    private boolean cachedNeedForLocalization = false;
-
-    public LLResult runLocalization(int quadrant) {
-        LLResult result = limelight.getLatestResult();
-        cachedNeedForLocalization = !result.isValid();
-        limelight.pipelineSwitch(quadrant);
-        return result;
-    }
-
-    public void reportLimelightMetrics() {
-        LLStatus status = limelight.getStatus();
-        telemetry.addData("Name", "%s", status.getName());
-        telemetry.addData("LL", "Temp: %.1fC, CPU: %.1f%%, FPS: %d",
-                status.getTemp(), status.getCpu(), (int) status.getFps());
-        telemetry.addData("Pipeline", "Index: %d, Type: %s",
-                status.getPipelineIndex(), status.getPipelineType());
-    }
-
     // Match Variables
     public static String alliance = "red";
     private byte frameTimer = 0;
-
-    // Hives
-    private boolean[] redHiveHeights, blueHiveHeights;
-
-    public void resetHiveStates() {
-        Arrays.fill(redHiveHeights, 0, 4, false);
-        Arrays.fill(redHiveHeights, 4, 8, true);
-        Arrays.fill(blueHiveHeights, 0, 4, false);
-        Arrays.fill(blueHiveHeights, 4, 8, true);
-    }
-
-    public byte inferHiveState(boolean[] hiveHeights) {
-        int hiveAvg = 0;
-        for (int i = 0; i < 4; i++) {
-            hiveAvg += hiveHeights[i] ? 3 : 1;
-        }
-        for (int i = 4; i < 8; i++) {
-            hiveAvg += hiveHeights[i] ? 1 : 3;
-        }
-        return (byte) hiveAvg;
-    }
-
-    public void judgeAndUpdateApril(FiducialResult fr) {
-        if (fr == null || fr.getRobotPoseTargetSpace() == null) return;
-        Position relativePosition = fr.getRobotPoseTargetSpace().getPosition();
-        if (relativePosition == null) return;
-
-        int id = fr.getFiducialId();
-        boolean state = relativePosition.z >= 74;
-
-        if (id >= 30 && id <= 37) {
-            redHiveHeights[id - 30] = state;
-        } else if (id >= 38 && id <= 45) {
-            blueHiveHeights[id - 38] = state;
-        }
-        telemetry.addData("Position!!!", " X: %.2f Y: %.2f", relativePosition.x, relativePosition.y);
-    }
-
     // Motors
     public static double intakeSpeed = 800, shooterSpeed = 800;
-
+    LimelightUtil limeutils;
     @Override
     public void runOpMode() throws InterruptedException {
         // Driver Station Linking
@@ -126,17 +67,17 @@ public class main extends LinearOpMode {
         telemetry.update();
 
         // Limelight Initialization
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(0);
-        limelight.start();
+        limeutils.limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limeutils.limelight.pipelineSwitch(0);
+        limeutils.limelight.start();
 
         // Motor Object Retrieval
         DcMotorEx motorIntake = hardwareMap.get(DcMotorEx.class, "intake");
         DcMotorEx motorShooter = hardwareMap.get(DcMotorEx.class, "shooter");
 
         // State Variable Initialization
-        redHiveHeights = new boolean[8];
-        blueHiveHeights = new boolean[8];
+        limeutils.redHiveHeights = new boolean[8];
+        limeutils.blueHiveHeights = new boolean[8];
         byte avgRedState = 2;
         byte avgBlueState = 2;
 
@@ -167,18 +108,18 @@ public class main extends LinearOpMode {
             motorShooter.setVelocity(shooterSpeed);
             telemetry.addData("Motor Velocity", "speed: %.2f", motorIntake.getVelocity());
 
-            LLResult result = limelight.getLatestResult();
-            reportLimelightMetrics();
+            LLResult result = limeutils.limelight.getLatestResult();
+            limeutils.reportLimelightMetrics();
             if (result.isValid()) {
                 if (frameTimer >= 25) {
-                    resetHiveStates();
+                    limeutils.resetHiveStates();
                     frameTimer = 0;
                 }
                 List<FiducialResult> fiducialResults = result.getFiducialResults();
                 for (FiducialResult fr : fiducialResults) {
-                    judgeAndUpdateApril(fr);
-                    avgRedState = inferHiveState(redHiveHeights);
-                    avgBlueState = inferHiveState(blueHiveHeights);
+                    limeutils.judgeAndUpdateApril(fr);
+                    avgRedState = limeutils.inferHiveState(limeutils.redHiveHeights);
+                    avgBlueState = limeutils.inferHiveState(limeutils.blueHiveHeights);
                 }
                 telemetry.addData("Avg Red State", avgRedState);
                 telemetry.addData("Avg Blue State", avgBlueState);
@@ -186,8 +127,8 @@ public class main extends LinearOpMode {
                 telemetry.addData("Limelight", "No data available");
             }
 
-            if (gamepad1.ps || cachedNeedForLocalization) {
-                result = runLocalization(0);
+            if (gamepad1.ps || limeutils.cachedNeedForLocalization) {
+                //result = limeutils.runLocalization(0);
                 if (result.isValid()) {
                     Pose3D pose3D = result.getBotpose();
                     telemetry.addData("Pose3D", pose3D);
@@ -196,6 +137,6 @@ public class main extends LinearOpMode {
             telemetry.update();
         }
 
-        limelight.stop();
+        limeutils.stop();
     }
 }
