@@ -8,10 +8,10 @@ import com.pedropathing.tuning.autotune.Procedure;
 import com.pedropathing.tuning.autotune.Tuner;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-import org.firstinspires.ftc.teamcode.pedro.procedures.ForesightTuner;
-import org.firstinspires.ftc.teamcode.pedro.procedures.MecanumTuner;
-import org.firstinspires.ftc.teamcode.pedro.procedures.PinpointTuner;
-import org.firstinspires.ftc.teamcode.pedro.procedures.Tests;
+import org.firstinspires.ftc.teamcode.dependencies.pedro.procedures.ForesightTuner;
+import org.firstinspires.ftc.teamcode.dependencies.pedro.procedures.MecanumTuner;
+import org.firstinspires.ftc.teamcode.dependencies.pedro.procedures.PinpointTuner;
+import org.firstinspires.ftc.teamcode.dependencies.pedro.procedures.Tests;
 
 public class Tuning {
     // Tuners go here
