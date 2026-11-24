@@ -45,8 +45,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
 import java.util.List;
 
-import org.firstinspires.ftc.teamcode.AutoPathingTest;
-import org.firstinspires.ftc.teamcode.TeleopPathingTest;
+import org.firstinspires.ftc.teamcode.opmodes.AutoPathingTest;
+import org.firstinspires.ftc.teamcode.opmodes.TeleopPathingTest;
 import org.firstinspires.ftc.teamcode.tests.LimelightUtil;
 
 @Config
